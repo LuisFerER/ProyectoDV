@@ -6,6 +6,7 @@
 package mygame;
 
 import com.jme3.asset.AssetManager;
+import com.jme3.bounding.BoundingBox;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
@@ -33,12 +34,13 @@ public class Enemy {
         return mat;
     }
     
-    public Enemy(String name, String texture,Vector3f location, float xExtent, float yExtent, float zExtent, AssetManager assetManager) {
+    public Enemy(String name, String texture, float xExtent, float yExtent, float zExtent, AssetManager assetManager) {
         mesh = new Box(xExtent, yExtent, zExtent);
         geom = new Geometry(name, mesh);
         mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         mat.setColor("Color", ColorRGBA.randomColor());
         geom.setMaterial(mat);
-        geom.setLocalTranslation(location);
+        geom.setModelBound(new BoundingBox());
+        geom.updateModelBound();
     }
 }

@@ -1,15 +1,21 @@
 package mygame;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.bounding.BoundingBox;
+import com.jme3.collision.CollisionResult;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.KeyInput;
+import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.input.controls.Trigger;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Line;
 import com.jme3.math.Quaternion;
+import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.RenderManager;
 import com.jme3.scene.Geometry;
@@ -19,6 +25,9 @@ import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
 import java.util.ArrayList;
 import java.util.Random;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
 /**
  * This is the Main Class of your Game. You should only do initialization here.
@@ -30,16 +39,29 @@ public class Main extends SimpleApplication {
     public static final Quaternion PITCH090 = new Quaternion().fromAngleAxis(FastMath.PI/2, new Vector3f(1,0,0));
     
     private static final Trigger TRIGGER_CHG_CAMERA = new KeyTrigger(KeyInput.KEY_SPACE);
+    private final static Trigger TRIGGER_SHOOTING = new MouseButtonTrigger(MouseInput.BUTTON_LEFT);
+    
     private static final String MAPPING_CHG_CAMERA = ("CHG_CAMERA");
+    private static final String MAPPING_SHOOTING = "Shooting";
+    
+    private Vector3f tower1_camlocation;
+    private Vector3f tower2_camlocation;
     
     private ArrayList<Line> l;
     private Spatial spacial=null;
+    
+    private Geometry castle_geom;
+    private BoundingBox castle_bounds;
+    
     
     private int maxEnemies;
     private int countEnemies;
     private ArrayList<Enemy> enemies;
     private int spawnedEnemies;
+    private float countdownToEnemy;
     Node enemies_node;
+    
+    float totalMoved;
     //private static final Vector3f tower1_camlocation = new Vector3f(tower1_geom.getWorldTranslation().getX(), 2 * tower1_mesh.yExtent + floor_mesh.yExtent + 0.7f, tower1_geom.getWorldTranslation().getZ());
     
     Tower tower1;
@@ -61,18 +83,17 @@ public class Main extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
+        //para hacer uso de los triggers y mapping se deben registrar en el inputManager
         inputManager.addMapping(MAPPING_CHG_CAMERA, TRIGGER_CHG_CAMERA);
+        inputManager.addMapping(MAPPING_SHOOTING, TRIGGER_SHOOTING);
         
+        // Para poder activar los mapping debemos estar escuchando para detectar el input
+        inputManager.addListener(actionListener, new String[]{MAPPING_CHG_CAMERA});
+        inputManager.addListener(actionListener, new String[]{MAPPING_SHOOTING});
         
         //Para controlar si se oculta la informacion de los objetos, mallas y sombras
         setDisplayFps(false);
         setDisplayStatView(false);
-
-        //El objeto flayCam esta instanciado por defecto, al extender SimpleApplication
-        flyCam.setMoveSpeed(10.8f); //Determinamos que la camara se mueva a una mayor velocidad
-        
-        //Cambiaremos la ubicacion y rotacion de la camara para dar la perspectiva que requiere el escenario
-        cam.setLocation(new Vector3f(0, 40, 15));
         
         cam.setRotation(PITCH090);
         
@@ -96,11 +117,13 @@ public class Main extends SimpleApplication {
         spawn_geom.setLocalTranslation(0, 0, -spawn_mesh.zExtent);
         
         Box castle_mesh = new Box(20,10,1);
-        Geometry castle_geom = new Geometry("castle", castle_mesh);
+        castle_geom = new Geometry("castle", castle_mesh);
         
         Material castle_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         castle_mat.setColor("Color", ColorRGBA.Magenta);
         castle_geom.setMaterial(castle_mat);
+        
+        castle_bounds = new BoundingBox(new Vector3f(0, 10, 101), 20,10,1);
         
         float towerX  = 1;
         float towerY = 10;
@@ -116,6 +139,8 @@ public class Main extends SimpleApplication {
         rootNode.attachChild(spawn_geom);
         towers_node.setLocalTranslation(0, castle_mesh.yExtent, (2 * floor_mesh.zExtent) + castle_mesh.zExtent);        
         
+        System.out.println("castle_geom:\t" + castle_geom.getWorldTranslation());
+        
         l = new ArrayList<>();
         l.add(new Line(new Vector3f(-10,4.25f,-6), new Vector3f(10,4.25f,-6)));
         l.add(new Line(new Vector3f(-10,4.25f,-8), new Vector3f(10,4.25f,-8)));
@@ -126,36 +151,112 @@ public class Main extends SimpleApplication {
         maxEnemies = 50;
         countEnemies = 0;
         spawnedEnemies = 0;
+        countdownToEnemy = 5;
         enemies = new ArrayList<>();
         
         enemies_node = new Node();
         rootNode.attachChild(enemies_node);
-        flyCam.setMoveSpeed(100);
+        
+        totalMoved = 0;
+        
+         tower1_camlocation = new Vector3f(tower1.getGeom().getWorldTranslation().getX(), 2 * tower1.getMesh().yExtent + floor_mesh.yExtent + 0.7f, tower1.getGeom().getWorldTranslation().getZ());
+        tower2_camlocation = new Vector3f(tower2.getGeom().getWorldTranslation().getX(), 2 * tower2.getMesh().yExtent + floor_mesh.yExtent + 0.7f, tower2.getGeom().getWorldTranslation().getZ());
+
+        flyCam.setMoveSpeed(0);
+        cam.setLocation(tower1_camlocation);
+        
+        // La mira que indica la posicion del mouse es inicializada
+        attachCenterMark();
+    }
+    
+    /**
+     * attachCenterMarck crea un objeto geometry que servira de mira para apuntar 
+     * diferentes objetos en el escenario. Ya que es una marca 2D, se debe adjuntar 
+     * a la interface 2D del usurio "guiNode", este objeto es intanciado en 
+     * cualquier SimpleApplication.
+     */
+    private void attachCenterMark(){
+        Box b = new Box(Vector3f.ZERO, 1, 1, 1);
+        Geometry geom = new Geometry("centermark", b);
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setColor("Color", ColorRGBA.White);
+        geom.setMaterial(mat);
+        geom.setLocalTranslation(Vector3f.ZERO);
+        geom.scale(4);
+        geom.setLocalTranslation(settings.getWidth()/2, settings.getHeight()/2, 0);
+        guiNode.attachChild(geom); //adjunta a la interface 2D del usuario
     }
     
     private final ActionListener actionListener = new ActionListener(){
 
         @Override
         public void onAction(String name, boolean isPressed, float tpf){
-            System.out.println("yout triggered" + name);
+            System.out.println("yout triggered : " + name);
             
             if(name.equals(MAPPING_CHG_CAMERA) && !isPressed) {
-                
+                Vector3f posicion = cam.getLocation();
+                if(posicion.equals(tower1_camlocation)){
+                    cam.setLocation(tower2_camlocation);
+                }else{
+                    if(posicion.equals(tower2_camlocation)){
+                        cam.setLocation(tower1_camlocation);
+                    }
+                }
+            }
+            else if(name.equals(MAPPING_SHOOTING) && !isPressed){
+                // se comprueba que el trigger indentificado corresponda a la acciÃ³n deseada
+                if(name.equals(MAPPING_SHOOTING)){
+                    //En esta seccion determinamos la accion de disparar al enemico que este apuntando
+                    //la mira del mouse.
+                    //colision identificara el objeto al cual se le hace click
+                    CollisionResults results = new CollisionResults();
+                    //Se proyecta una linea de acuerdo a la posicion de la camara, en la
+                    //direccion donde la camara esta apuntando
+                    Ray ray = new Ray(cam.getLocation(), cam.getDirection());
+                    //calculamos si este rayo proyecto hace colision con el objeto
+                    rootNode.collideWith(ray, results);
+
+                    //si el usuario ha hecho click en algo, indentifacaremos la geometria seleccionada
+                    if(results.size()>0){
+                        Geometry target = results.getClosestCollision().getGeometry();
+                        if(target.getName().contains("enemy")){
+                            System.out.println(target.getName());
+                            enemies_node.detachChildNamed(target.getName());
+                        }
+
+                    }
+                }
             }
         }
     };
 
     @Override
     public void simpleUpdate(float tpf) {
-        Vector3f randomPoint = l.get((int) (Math.random()*5)).random();
-        
-        if(countEnemies < maxEnemies){
-            enemies.add(new Enemy(("enemy" + spawnedEnemies), "", l.get((int) (Math.random()*5)).random(), 1,4,1, assetManager));
+        countdownToEnemy = countdownToEnemy - tpf;
+        if(countEnemies < maxEnemies && countdownToEnemy <= 0){
+            int x = (int) (Math.random()*20)-10;
+            int z = (int) (Math.random()*10)-15;
+            enemies.add(new Enemy(("enemy" + spawnedEnemies), "", 1,4,1, assetManager));
             spawnedEnemies++;
             countEnemies++;
             enemies_node.attachChild(enemies.get(enemies.size() - 1).getGeom());
+            enemies.get(enemies.size() - 1).getGeom().move(x, 0.25f, z - totalMoved);
+            countdownToEnemy = 5;
         }
-        enemies_node.move(0, 0, 0.001f);
+        
+        if(countEnemies > 0){
+            enemies_node.move(0, 0, 0.01f);
+            totalMoved += 0.01;
+            CollisionResults results = new CollisionResults();
+            castle_bounds.collideWith(enemies_node, results);
+            if (results.size() > 0) {
+                CollisionResult closest  = results.getClosestCollision();
+                JPanel panel = new JPanel();
+            panel.add(new JLabel("Has Perdido :C"));
+            JOptionPane.showMessageDialog(null, panel,"onu",JOptionPane.INFORMATION_MESSAGE);
+            System.exit(0);
+            }
+        }   
     }
 
     @Override
