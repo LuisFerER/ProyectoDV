@@ -36,7 +36,8 @@ public class Tower {
         mesh = new Box(xExtent, yExtent, zExtent);
         geom = new Geometry(name, mesh);
         mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.randomColor());
+        mat.setTexture("ColorMap", assetManager.loadTexture("Textures/tower.jpg"));
+        //mat.setColor("Color", ColorRGBA.randomColor());
         geom.setMaterial(mat);
         geom.setLocalTranslation(location);
     }

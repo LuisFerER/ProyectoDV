@@ -56,8 +56,9 @@ public class Main extends SimpleApplication {
     
     private int maxEnemies;
     private int countEnemies;
-    private ArrayList<Enemy> enemies;
+    private ArrayList<Geometry> enemies;
     private int spawnedEnemies;
+    private float frecEnemy;
     private float countdownToEnemy;
     Node enemies_node;
     
@@ -108,7 +109,8 @@ public class Main extends SimpleApplication {
         Geometry spawn_geom = new Geometry("spawn", spawn_mesh);
         Material floor_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         Material spawn_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        floor_mat.setColor("Color", ColorRGBA.Orange);
+        floor_mat.setTexture("ColorMap", assetManager.loadTexture("Textures/floor.jpg"));
+        //floor_mat.setColor("Color", ColorRGBA.Orange);
         spawn_mat.setColor("Color", ColorRGBA.Yellow);
         floor_geom.setMaterial(floor_mat);
         spawn_geom.setMaterial(spawn_mat);
@@ -120,7 +122,8 @@ public class Main extends SimpleApplication {
         castle_geom = new Geometry("castle", castle_mesh);
         
         Material castle_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        castle_mat.setColor("Color", ColorRGBA.Magenta);
+        castle_mat.setTexture("ColorMap", assetManager.loadTexture("Textures/castle_door.jpg"));
+        //castle_mat.setColor("Color", ColorRGBA.Magenta);
         castle_geom.setMaterial(castle_mat);
         
         castle_bounds = new BoundingBox(new Vector3f(0, 10, 101), 20,10,1);
@@ -151,7 +154,8 @@ public class Main extends SimpleApplication {
         maxEnemies = 50;
         countEnemies = 0;
         spawnedEnemies = 0;
-        countdownToEnemy = 5;
+        frecEnemy = 5;
+        countdownToEnemy = frecEnemy;
         enemies = new ArrayList<>();
         
         enemies_node = new Node();
@@ -221,7 +225,11 @@ public class Main extends SimpleApplication {
                         Geometry target = results.getClosestCollision().getGeometry();
                         if(target.getName().contains("enemy")){
                             System.out.println(target.getName());
+                            Geometry temp = (Geometry) enemies_node.getChild(target.getName());
                             enemies_node.detachChildNamed(target.getName());
+                            enemies.remove(temp);
+                            temp = null;
+                            countEnemies--;
                         }
 
                     }
@@ -234,14 +242,19 @@ public class Main extends SimpleApplication {
     public void simpleUpdate(float tpf) {
         countdownToEnemy = countdownToEnemy - tpf;
         if(countEnemies < maxEnemies && countdownToEnemy <= 0){
-            int x = (int) (Math.random()*20)-10;
-            int z = (int) (Math.random()*10)-15;
-            enemies.add(new Enemy(("enemy" + spawnedEnemies), "", 1,4,1, assetManager));
+            float size = 2;
+            enemies.add(new Enemy(("enemy" + spawnedEnemies),assetManager.loadTexture("Textures/roca.jpg") , size, assetManager).getGeom());
             spawnedEnemies++;
             countEnemies++;
-            enemies_node.attachChild(enemies.get(enemies.size() - 1).getGeom());
-            enemies.get(enemies.size() - 1).getGeom().move(x, 0.25f, z - totalMoved);
-            countdownToEnemy = 5;
+            enemies_node.attachChild(enemies.get(enemies.size() - 1));
+            enemies.get(enemies.size() - 1).move(size, (float) (size + Math.random()*7), size - totalMoved);
+            countdownToEnemy = frecEnemy;
+            if(spawnedEnemies % 5 == 0){
+                if(frecEnemy > 0.5)
+                    frecEnemy = (float) (frecEnemy / 1.5);
+                if(maxEnemies < 50)
+                    maxEnemies = (int) (maxEnemies * 1.5);
+            }
         }
         
         if(countEnemies > 0){
@@ -253,7 +266,7 @@ public class Main extends SimpleApplication {
                 CollisionResult closest  = results.getClosestCollision();
                 JPanel panel = new JPanel();
             panel.add(new JLabel("Has Perdido :C"));
-            JOptionPane.showMessageDialog(null, panel,"onu",JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, panel,"Derrota",JOptionPane.INFORMATION_MESSAGE);
             System.exit(0);
             }
         }   

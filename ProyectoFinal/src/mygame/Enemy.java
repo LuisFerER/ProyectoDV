@@ -12,17 +12,19 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Sphere;
+import com.jme3.texture.Texture;
 
 /**
  *
  * @author isaia
  */
 public class Enemy {
-    private Box mesh;
+    private Sphere mesh;
     private Geometry geom;
     private Material mat;
 
-    public Box getMesh() {
+    public Sphere getMesh() {
         return mesh;
     }
 
@@ -34,11 +36,12 @@ public class Enemy {
         return mat;
     }
     
-    public Enemy(String name, String texture, float xExtent, float yExtent, float zExtent, AssetManager assetManager) {
-        mesh = new Box(xExtent, yExtent, zExtent);
+    public Enemy(String name, Texture texture, float size, AssetManager assetManager) {
+        mesh = new Sphere(20, 20, size);
         geom = new Geometry(name, mesh);
         mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.randomColor());
+        mat.setTexture("ColorMap", texture);
+        
         geom.setMaterial(mat);
         geom.setModelBound(new BoundingBox());
         geom.updateModelBound();
