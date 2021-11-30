@@ -36,7 +36,10 @@ import javax.swing.JPanel;
  */
 public class Main extends SimpleApplication {
 
-    public static final Quaternion PITCH090 = new Quaternion().fromAngleAxis(FastMath.PI/2, new Vector3f(1,0,0));
+    /**
+     *
+     */
+    public static final Quaternion CAMINITIALROTATION = new Quaternion(-0.01f, 0.99f, -0.1f, -0.11f);
     
     private static final Trigger TRIGGER_CHG_CAMERA = new KeyTrigger(KeyInput.KEY_SPACE);
     private final static Trigger TRIGGER_SHOOTING = new MouseButtonTrigger(MouseInput.BUTTON_LEFT);
@@ -63,8 +66,7 @@ public class Main extends SimpleApplication {
     Node enemies_node;
     
     float totalMoved;
-    //private static final Vector3f tower1_camlocation = new Vector3f(tower1_geom.getWorldTranslation().getX(), 2 * tower1_mesh.yExtent + floor_mesh.yExtent + 0.7f, tower1_geom.getWorldTranslation().getZ());
-    
+        
     Tower tower1;
     Tower tower2;
     public static void main(String[] args) {
@@ -96,7 +98,8 @@ public class Main extends SimpleApplication {
         setDisplayFps(false);
         setDisplayStatView(false);
         
-        cam.setRotation(PITCH090);
+        cam.setRotation(CAMINITIALROTATION);
+        
         
         Node playerNode = new Node("player_node"), towerNode = new Node("tower_node"), creepNode = new Node("creep_node");
         
@@ -110,8 +113,9 @@ public class Main extends SimpleApplication {
         Material floor_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         Material spawn_mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         floor_mat.setTexture("ColorMap", assetManager.loadTexture("Textures/floor.jpg"));
+        spawn_mat.setTexture("ColorMap", assetManager.loadTexture("Textures/spawn.jpg"));
         //floor_mat.setColor("Color", ColorRGBA.Orange);
-        spawn_mat.setColor("Color", ColorRGBA.Yellow);
+        //spawn_mat.setColor("Color", ColorRGBA.Yellow);
         floor_geom.setMaterial(floor_mat);
         spawn_geom.setMaterial(spawn_mat);
         //Utilizaremos las dimensiones de la malla del piso para definir la posicion de unos elementos
@@ -223,6 +227,7 @@ public class Main extends SimpleApplication {
                     //si el usuario ha hecho click en algo, indentifacaremos la geometria seleccionada
                     if(results.size()>0){
                         Geometry target = results.getClosestCollision().getGeometry();
+                        System.out.println(cam.getRotation());
                         if(target.getName().contains("enemy")){
                             System.out.println(target.getName());
                             Geometry temp = (Geometry) enemies_node.getChild(target.getName());
@@ -243,7 +248,7 @@ public class Main extends SimpleApplication {
         countdownToEnemy = countdownToEnemy - tpf;
         if(countEnemies < maxEnemies && countdownToEnemy <= 0){
             float size = 2;
-            enemies.add(new Enemy(("enemy" + spawnedEnemies),assetManager.loadTexture("Textures/roca.jpg") , size, assetManager).getGeom());
+            enemies.add(new Enemy(("enemy" + spawnedEnemies),assetManager.loadTexture("Textures/ball.jpg") , size, assetManager).getGeom());
             spawnedEnemies++;
             countEnemies++;
             enemies_node.attachChild(enemies.get(enemies.size() - 1));
