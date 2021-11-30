@@ -17,7 +17,7 @@ import com.jme3.texture.Texture;
 
 /**
  *
- * @author isaia
+ * @author Andrea Guadalupe Plascencia Rodriguez, Isaias Ricardo Valdivia Hernandez, Luis Fernando Escobedo Romero
  */
 public class Enemy {
     private Sphere mesh;

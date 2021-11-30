@@ -32,13 +32,10 @@ import javax.swing.JPanel;
 /**
  * This is the Main Class of your Game. You should only do initialization here.
  * Move your Logic into AppStates or Controls
- * @author normenhansen
+ * @author Andrea Guadalupe Plascencia Rodriguez, Isaias Ricardo Valdivia Hernandez, Luis Fernando Escobedo Romero
  */
 public class Main extends SimpleApplication {
 
-    /**
-     *
-     */
     public static final Quaternion CAMINITIALROTATION = new Quaternion(-0.01f, 0.99f, -0.1f, -0.11f);
     
     private static final Trigger TRIGGER_CHG_CAMERA = new KeyTrigger(KeyInput.KEY_SPACE);
@@ -132,15 +129,17 @@ public class Main extends SimpleApplication {
         
         castle_bounds = new BoundingBox(new Vector3f(0, 10, 101), 20,10,1);
         
-        float towerX  = 1;
+        float towerX  = 3;
         float towerY = 10;
-        float towerZ = 1;
-        tower1 = new Tower("tower1", "", new Vector3f(floor_mesh.xExtent + towerX, 0, -(towerZ * 5)), towerX, towerY, towerZ , assetManager);
-        tower2 = new Tower("tower2", "", new Vector3f(-(floor_mesh.xExtent + towerX), 0, -(towerZ * 5)), towerX, towerY, towerZ , assetManager);
+        float towerZ = 3;
+        tower1 = new Tower("tower1", "Textures/tower.jpg", "Textures/cubierta.jpg", new Vector3f(floor_mesh.xExtent + towerX, 0, -(towerZ * 5)), towerX, towerY, towerZ , assetManager);
+        tower2 = new Tower("tower2", "Textures/tower.jpg", "Textures/cubierta.jpg", new Vector3f(-(floor_mesh.xExtent + towerX), 0, -(towerZ * 5)), towerX, towerY, towerZ , assetManager);
         Node towers_node = new Node();
         towers_node.attachChild(castle_geom);
         towers_node.attachChild(tower1.getGeom());
         towers_node.attachChild(tower2.getGeom());
+        towers_node.attachChild(tower1.getCubierta_geom());
+        towers_node.attachChild(tower2.getCubierta_geom());
         rootNode.attachChild(towers_node);
         rootNode.attachChild(floor_geom);
         rootNode.attachChild(spawn_geom);
@@ -167,8 +166,8 @@ public class Main extends SimpleApplication {
         
         totalMoved = 0;
         
-         tower1_camlocation = new Vector3f(tower1.getGeom().getWorldTranslation().getX(), 2 * tower1.getMesh().yExtent + floor_mesh.yExtent + 0.7f, tower1.getGeom().getWorldTranslation().getZ());
-        tower2_camlocation = new Vector3f(tower2.getGeom().getWorldTranslation().getX(), 2 * tower2.getMesh().yExtent + floor_mesh.yExtent + 0.7f, tower2.getGeom().getWorldTranslation().getZ());
+        tower1_camlocation = new Vector3f(tower1.getGeom().getWorldTranslation().getX()-2f, 2 * tower1.getMesh().yExtent + floor_mesh.yExtent + 0.7f, tower1.getGeom().getWorldTranslation().getZ()-2f);
+        tower2_camlocation = new Vector3f(tower2.getGeom().getWorldTranslation().getX()+2f, 2 * tower2.getMesh().yExtent + floor_mesh.yExtent + 0.7f, tower2.getGeom().getWorldTranslation().getZ()-2f);
 
         flyCam.setMoveSpeed(0);
         cam.setLocation(tower1_camlocation);
