@@ -6,7 +6,7 @@
 package mygame;
 
 /**
- *
+ * Clase donde se diseña el JPanel que indica que el jugador ha perdido
  * @author Andrea Guadalupe Plascencia Rodriguez, Isaias Ricardo Valdivia Hernandez, Luis Fernando Escobedo Romero
  */
 public class PanelDerrota extends javax.swing.JPanel {
